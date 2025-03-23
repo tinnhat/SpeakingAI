@@ -34,7 +34,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params
+  const { id } = await params
   
   try {
     await connectDB()
@@ -60,7 +60,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params
+  const { id } = await params
   
   try {
     await connectDB()
