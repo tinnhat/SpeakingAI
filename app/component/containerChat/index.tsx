@@ -17,7 +17,7 @@ const ContainerChat = ({
   isLoading: boolean
   isDarkMode: boolean
   messages: Message[]
-  setMessages: (messages: Message[]) => void
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   currentConversationId: string | null
 }) => {
   const [isRecording, setIsRecording] = useState(false)
@@ -41,7 +41,7 @@ const ContainerChat = ({
 
   const sendToHuggingFace = async (text: string) => {
     const res = await fetch(
-      'https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill',
+      "https://api-inference.huggingface.co/models/google/flan-t5-base",
       {
         method: 'POST',
         headers: {
@@ -84,10 +84,8 @@ const ContainerChat = ({
           text: text,
           isAI: false,
         }
-
         // Update messages with user's speech
-        setMessages(prevMessages => [...prevMessages, newMessage])
-
+        setMessages((prevMessages:Message[]) => [...prevMessages, newMessage])
         // Get AI response
         const result = await sendToHuggingFace(text)
         const responseAI: Message = {

@@ -15,28 +15,6 @@ export async function GET() {
   }
 }
 
-// Update conversation
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  try {
-    await connectDB()
-    const body = await request.json()
-    const { content } = body
-
-    // First update the detail conversation
-    const conversation = await Conversation.findById(params.id)
-    if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-    }
-
-    await DetailConversation.findByIdAndUpdate(conversation.id_detail, { content })
-
-    return NextResponse.json({ success: true, content })
-  } catch (error) {
-    console.error('Error updating conversation:', error)
-    return NextResponse.json({ error: 'Failed to update conversation' }, { status: 500 })
-  }
-}
-
 // Create new conversation
 export async function POST(request: Request) {
   try {
