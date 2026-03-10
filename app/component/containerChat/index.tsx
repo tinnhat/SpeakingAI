@@ -39,20 +39,52 @@ const ContainerChat = ({
     }
   }, [isDarkMode])
 
-  const sendToHuggingFace = async (text: string) => {
+  const sendToHuggingFace = async (text: string, currentMessages: Message[]) => {
+    const chatHistory = currentMessages.slice(-10).map(msg => ({
+      role: msg.isAI ? 'assistant' : 'user',
+      content: msg.text,
+    }))
+
     const res = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-base",
+      "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ inputs: text }),
+        body: JSON.stringify({
+          inputs: formatChatPrompt(chatHistory, text),
+          parameters: {
+            max_new_tokens: 256,
+            temperature: 0.7,
+            top_p: 0.95,
+            return_full_text: false,
+          },
+        }),
       }
     )
     const data = await res.json()
-    return data[0].generated_text || "Sorry, I didn't understand."
+    if (data.error) throw new Error(data.error)
+    const generated = data[0]?.generated_text?.trim()
+    return generated || "Sorry, I didn't understand."
+  }
+
+  const formatChatPrompt = (
+    history: { role: string; content: string }[],
+    userMessage: string
+  ) => {
+    const systemPrompt =
+      'You are a friendly English tutor. Help the user practice English conversation. ' +
+      'Keep responses concise (2-3 sentences). If the user makes grammar or vocabulary mistakes, ' +
+      'gently correct them and explain briefly. Respond naturally like a conversation partner.'
+
+    let prompt = `<|system|>\n${systemPrompt}</s>\n`
+    for (const msg of history) {
+      prompt += `<|${msg.role}|>\n${msg.content}</s>\n`
+    }
+    prompt += `<|user|>\n${userMessage}</s>\n<|assistant|>\n`
+    return prompt
   }
 
   // Update the speech recognition effect
@@ -87,7 +119,7 @@ const ContainerChat = ({
         // Update messages with user's speech
         setMessages((prevMessages:Message[]) => [...prevMessages, newMessage])
         // Get AI response
-        const result = await sendToHuggingFace(text)
+        const result = await sendToHuggingFace(text, [...messages, newMessage])
         const responseAI: Message = {
           id: messages.length + 2,
           text: result,
@@ -168,7 +200,7 @@ const ContainerChat = ({
     setInputText('')
 
     try {
-      const result = await sendToHuggingFace(inputText)
+      const result = await sendToHuggingFace(inputText, [...messages, newMessage])
       const responseAI = {
         id: messages.length + 2,
         text: result,
